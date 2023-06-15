@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:chatting_app/widgets/auth/auth_form.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -15,7 +18,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _auth = FirebaseAuth.instance;
   var _isLoading = false;
   void _submitAuthForm(String email, String password, String username,
-      bool isLogin, BuildContext ctx) async {
+      File image, bool isLogin, BuildContext ctx) async {
     UserCredential userCredential;
     try {
       setState(() {
@@ -27,10 +30,16 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         userCredential = await _auth.createUserWithEmailAndPassword(
             email: email, password: password);
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('user_image')
+            .child('${userCredential.user!.uid}.jpg');
+        await ref.putFile(image);
+        final url = await ref.getDownloadURL();
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
-            .set({'username': username, 'email': email});
+            .set({'username': username, 'email': email, 'image_url': url});
       }
     } on PlatformException catch (err) {
       var message = 'An error occurred, please check your credentials!';
@@ -45,7 +54,9 @@ class _AuthScreenState extends State<AuthScreen> {
         backgroundColor: Theme.of(ctx).colorScheme.error,
       ));
     } catch (err) {
-      print('This is CatchStatement:$err');
+      if (kDebugMode) {
+        print('This is CatchStatement:$err');
+      }
       setState(() {
         _isLoading = false;
       });

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chatting_app/widgets/pickers/user_image_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -5,7 +7,7 @@ class AuthForm extends StatefulWidget {
   const AuthForm(this.submitFn, this.isLoading, {super.key});
   final bool isLoading;
   final void Function(String email, String password, String userName,
-      bool isLogin, BuildContext ctx) submitFn;
+      File image, bool isLogin, BuildContext ctx) submitFn;
 
   @override
   State<AuthForm> createState() => _AuthFormState();
@@ -17,13 +19,25 @@ class _AuthFormState extends State<AuthForm> {
   var _userEmail = '';
   var _userName = '';
   var _userPassword = '';
+  File? _userImageFile;
+  void _pickedImage(File image) {
+    _userImageFile = image;
+  }
+
   void _trySubmit() async {
     final isValid = _formKey.currentState?.validate();
     FocusScope.of(context).unfocus();
+    if (_userImageFile == null && !_isLogin) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Please pick an Image.'),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ));
+      return;
+    }
     if (isValid == true) {
       _formKey.currentState?.save();
       widget.submitFn(_userEmail.trim(), _userPassword.trim(), _userName.trim(),
-          _isLogin, context);
+          _userImageFile!, _isLogin, context);
       // print(_userEmail);
       // print(_userName);
       // print(_userPassword);
@@ -43,9 +57,12 @@ class _AuthFormState extends State<AuthForm> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!_isLogin) const UserImagePicker(),
+                  if (!_isLogin) UserImagePicker(_pickedImage),
                   TextFormField(
-                    key: const ValueKey('emailaddress'),
+                    key: const ValueKey('email'),
+                    autocorrect: false,
+                    textCapitalization: TextCapitalization.none,
+                    enableSuggestions: false,
                     validator: (value) {
                       if (value!.isEmpty || !value.contains('@')) {
                         return 'Please enter a valid email address.';
@@ -63,6 +80,9 @@ class _AuthFormState extends State<AuthForm> {
                   if (!_isLogin)
                     TextFormField(
                       key: const ValueKey('username'),
+                      autocorrect: true,
+                      textCapitalization: TextCapitalization.words,
+                      enableSuggestions: false,
                       validator: (value) {
                         if (value!.isEmpty || value.length < 4) {
                           return 'Password must be at least 4 characters.';

@@ -23,7 +23,8 @@ class _NewMessageState extends State<NewMessage> {
       'text': _enteredMessage,
       'createdAt': Timestamp.now(),
       'userId': user?.uid,
-      'username': userData['username']
+      'username': userData.data()?['username'],
+      'userImage': userData['image_url']
     });
     _controller.clear();
   }
@@ -38,7 +39,10 @@ class _NewMessageState extends State<NewMessage> {
           Expanded(
               child: TextField(
             controller: _controller,
-            decoration: InputDecoration(labelText: 'Send a message...'),
+            textCapitalization: TextCapitalization.sentences,
+            autocorrect: true,
+            enableSuggestions: true,
+            decoration: const InputDecoration(labelText: 'Send a message...'),
             onChanged: (value) {
               setState(() {
                 _enteredMessage = value;
@@ -47,8 +51,9 @@ class _NewMessageState extends State<NewMessage> {
           )),
           IconButton(
               color: Theme.of(context).primaryColor,
-              onPressed: _enteredMessage.trim().isEmpty ? null : _sendMessage,
-              icon: Icon(Icons.send))
+              onPressed:
+                  _enteredMessage.trim().isNotEmpty ? null : _sendMessage,
+              icon: const Icon(Icons.send))
         ],
       ),
     );
